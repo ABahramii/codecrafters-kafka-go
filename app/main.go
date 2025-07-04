@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/binary"
 	"fmt"
 	"net"
 	"os"
@@ -24,7 +25,9 @@ func main() {
 	}
 	defer conn.Close()
 
-	res := []byte{4, 7}
+	res := make([]byte, 8)
+	binary.BigEndian.PutUint32(res[0:4], 0)
+	binary.BigEndian.PutUint32(res[4:8], 7)
 	_, err = conn.Write(res)
 	if err != nil {
 		fmt.Println("Error writing to connection: ", err.Error())
