@@ -25,9 +25,18 @@ func main() {
 	}
 	defer conn.Close()
 
+	req := make([]byte, 4+2+2+4)
+	_, err = conn.Read(req)
+	if err != nil {
+		fmt.Println("Error reading from connection: ", err.Error())
+		os.Exit(1)
+	}
+
+	corrId := binary.BigEndian.Uint32(req[8:])
+
 	res := make([]byte, 8)
 	binary.BigEndian.PutUint32(res[0:4], 0)
-	binary.BigEndian.PutUint32(res[4:8], 7)
+	binary.BigEndian.PutUint32(res[4:8], corrId)
 	_, err = conn.Write(res)
 	if err != nil {
 		fmt.Println("Error writing to connection: ", err.Error())
