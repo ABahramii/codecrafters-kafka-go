@@ -34,9 +34,16 @@ func main() {
 
 	corrId := binary.BigEndian.Uint32(req[8:12])
 
-	res := make([]byte, 8)
+	apiVersion := binary.BigEndian.Uint16(req[6:8])
+	var errCode uint16 = 0
+	if apiVersion < 0 || apiVersion > 4 {
+		errCode = 35
+	}
+
+	res := make([]byte, 4+4+2)
 	binary.BigEndian.PutUint32(res[0:4], 0)
 	binary.BigEndian.PutUint32(res[4:8], corrId)
+	binary.BigEndian.PutUint16(res[8:10], errCode)
 	_, err = conn.Write(res)
 	if err != nil {
 		fmt.Println("Error writing to connection: ", err.Error())
