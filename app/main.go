@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
+	"io"
 	"net"
 	"os"
 )
@@ -16,40 +17,51 @@ func main() {
 		fmt.Println("Failed to bind to port 9092")
 		os.Exit(1)
 	}
-	conn, err2 := listener.Accept()
-	if err2 != nil {
-		fmt.Println("Error accepting connection: ", err2.Error())
-		os.Exit(1)
-	}
-	defer conn.Close()
+	defer listener.Close()
 
 	for {
-		handle(err2, conn)
+		conn, err := listener.Accept()
+		if err != nil {
+			fmt.Println("Error accepting connection: ", err.Error())
+			continue
+		}
+		go handleConnection(conn)
 	}
 }
 
-func handle(err2 error, conn net.Conn) {
+func handleConnection(conn net.Conn) {
+	defer conn.Close()
+	for {
+		err := handleRequest(conn)
+		if err != nil {
+			if err == io.EOF {
+				fmt.Println("Client closed the connection")
+			} else {
+				fmt.Println("Error handling request:", err)
+			}
+			break
+		}
+	}
+}
+
+func handleRequest(conn net.Conn) error {
 	msgSizeArr := make([]byte, 4)
-	_, err2 = conn.Read(msgSizeArr)
-	if err2 != nil {
-		fmt.Println("Error reading from connection: ", err2.Error())
-		os.Exit(1)
+	if _, err := io.ReadFull(conn, msgSizeArr); err != nil {
+		return err
 	}
 
 	msgSize := binary.BigEndian.Uint32(msgSizeArr)
 	reqHeader := make([]byte, msgSize)
-	_, err2 = conn.Read(reqHeader)
-	if err2 != nil {
-		fmt.Println("**Error reading from connection: ", err2.Error())
-		os.Exit(1)
+	if _, err := io.ReadFull(conn, reqHeader); err != nil {
+		return err
 	}
 
 	req := MakeRequest(reqHeader, msgSize)
 	res := MakeResponse(req)
 
-	_, err2 = conn.Write(res.toByteArray())
-	if err2 != nil {
-		fmt.Println("Error writing to connection: ", err2.Error())
-		os.Exit(1)
+	if _, err := conn.Write(res.toByteArray()); err != nil {
+		return err
 	}
+
+	return nil
 }
