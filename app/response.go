@@ -44,9 +44,10 @@ func (res Response) toByteArray() []byte {
 
 		f = t
 		arr[f] = version.tagBuffer
+
+		f++
 	}
 
-	f++
 	t = f + 4
 	binary.BigEndian.PutUint32(arr[f:t], res.throttleTime)
 
@@ -95,6 +96,12 @@ func MakeResponse(req Request) Response {
 				apiKey:        18,
 				minApiVersion: 0,
 				maxApiVersion: 4,
+				tagBuffer:     uint8(0),
+			},
+			{
+				apiKey:        75,
+				minApiVersion: 0,
+				maxApiVersion: 0,
 				tagBuffer:     uint8(0),
 			},
 		},
